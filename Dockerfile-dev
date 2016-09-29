@@ -1,0 +1,13 @@
+FROM spotify/kafka
+
+MAINTAINER Jeff Haynie <jhaynie@gmail.com>
+
+RUN mkdir -p /app
+
+COPY build/linux/github-webhook-kafka /app
+
+EXPOSE 2181 9092 8000
+
+ENV AUTO_CREATE_TOPICS true
+
+RUN echo "[program:github-webhook-kafka]\ncommand=/app/github-webhook-kafka\nautostart=true\nautorestart=true\n" > /etc/supervisor/conf.d/github-webhook-kafka.conf
