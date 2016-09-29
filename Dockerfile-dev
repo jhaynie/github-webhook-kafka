@@ -4,7 +4,7 @@ MAINTAINER Jeff Haynie <jhaynie@gmail.com>
 
 RUN mkdir -p /app
 
-COPY build/linux/github-webhook-kafka /app
+COPY build/linux/github-webhook-kafka* /app
 
 EXPOSE 2181 9092 8000
 

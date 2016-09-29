@@ -23,13 +23,13 @@ fmt:
 	@gofmt -s -l -w $(SRC)
 
 linux:
-	@docker run --rm -v $(GOPATH):/go -w /go/src/github.com/$(PKG) golang:latest go build -ldflags $(L) -o build/linux/$(NAME) main.go
+	@docker run --rm -v $(GOPATH):/go -w /go/src/github.com/$(PKG) golang:latest go build -ldflags $(L) -o build/linux/$(NAME)-linux-$(VERSION) main.go
 
 alpine:
-	@docker run --rm -v $(GOPATH):/go -w /go/src/github.com/$(PKG) jhaynie/golang-alpine go build -ldflags $(L) -o build/alpine/$(NAME) main.go
+	@docker run --rm -v $(GOPATH):/go -w /go/src/github.com/$(PKG) jhaynie/golang-alpine go build -ldflags $(L) -o build/alpine/$(NAME)-alpine-$(VERSION) main.go
 
 osx:
-	@go build -ldflags $(L) -o build/osx/$(NAME) main.go
+	@go build -ldflags $(L) -o build/osx/$(NAME)-osx-$(VERSION) main.go
 
 build: version osx
 
