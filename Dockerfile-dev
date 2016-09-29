@@ -8,10 +8,19 @@ ENV GWK_URL https://github.com/jhaynie/github-webhook-kafka/releases/download/"$
 RUN mkdir -p /app
 
 RUN wget -q $GWK_URL -O /app/github-webhook-kafka && \
-	chmod +x /app/github-webhook-kafka
+	chmod +x /app/github-webhook-kafka && \
+	apt-get update && \
+	apt-get install -y --no-install-recommends nodejs npm && \
+	ln -s /usr/bin/nodejs /usr/bin/node && \
+	npm install -g localtunnel && \
+	apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 EXPOSE 2181 9092 8000
 
+ENV HOME /app
 ENV AUTO_CREATE_TOPICS true
+ENV PAYLOAD_DEBUG true
+ENV KAFKA_DEBUG true
 
-RUN echo "[program:github-webhook-kafka]\ncommand=/app/github-webhook-kafka\nautostart=true\nautorestart=true\n" > /etc/supervisor/conf.d/github-webhook-kafka.conf
+RUN echo "[program:github-webhook-kafka]\ncommand=/app/github-webhook-kafka\nautostart=true\nautorestart=true\nstdout_logfile=/dev/stdout\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/stderr\nstderr_logfile_maxbytes=0\n" > /etc/supervisor/conf.d/github-webhook-kafka.conf
+RUN echo "[program:lt]\ncommand=lt -p 8000\nautostart=true\nautorestart=true\nstdout_logfile=/dev/stdout\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/stderr\nstderr_logfile_maxbytes=0\n" > /etc/supervisor/conf.d/lt.conf
