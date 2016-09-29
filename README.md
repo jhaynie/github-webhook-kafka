@@ -20,7 +20,7 @@ Optionally, you can control debugging with:
 
 You can easily run using Docker.
 
-If you want to use a pre-built container (`jhaynie/github-webhook-kafka`), you could use something like:
+If you want to use a pre-built container ([`jhaynie/github-webhook-kafka`](https://hub.docker.com/r/jhaynie/github-webhook-kafka/)), you could use something like:
 
 `docker run -d -p 8000:8000 -e GITHUB_SECRET=hello -e KAFKA_BROKERS=192.168.1.1:9092 jhaynie/github-webhook-kafka`
 
