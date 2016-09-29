@@ -7,10 +7,7 @@ ENV GWK_URL https://github.com/jhaynie/github-webhook-kafka/releases/download/"$
 
 RUN mkdir -p /app
 
-RUN apk update && \
-	apk add ca-certificates wget && \
-	update-ca-certificates && \
-	wget -q $GWK_URL -O /app/github-webhook-kafka && \
+RUN wget -q $GWK_URL -O /app/github-webhook-kafka && \
 	chmod +x /app/github-webhook-kafka
 
 EXPOSE 2181 9092 8000
