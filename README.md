@@ -6,15 +6,15 @@ This is a simple Github web hook server which streams incoming events into a Kaf
 
 The following environment variables need to be set:
 
-- `GITHUB_SECRET` - this is the secret used when creating / registering the web hook.  Defaults to empty string
-- `KAFKA_TOPIC` - the kafka topic name.  defaults to `github-event-stream`
-- `KAFKA_BROKERS` - a comma separated list of Kafka servers. Defaults to `localhost:9092`
-- `PORT` - webserver HTTP port. defaults to `8000`
+- `GWK_GITHUB_SECRET` - this is the secret used when creating / registering the web hook.  Defaults to empty string
+- `GWK_KAFKA_BROKERS` - a comma separated list of Kafka servers. Defaults to `localhost:9092`
+- `GWK_PORT` - webserver HTTP port. defaults to `8000`
 
 Optionally, you can control debugging with:
 
-- `PAYLOAD_DEBUG` - dump each incoming JSON event payload to the console when `true`
-- `KAFKA_DEBUG` - log kafka details when `true`
+- `GWK_KAFKA_TOPIC_PREFIX` - the kafka topic prefix which is append to the Github event name.  defaults to empty string
+- `GWK_PAYLOAD_DEBUG` - dump each incoming JSON event payload to the console when `true`
+- `GWK_KAFKA_DEBUG` - log kafka details when `true`
 
 ## Running
 
@@ -22,15 +22,15 @@ You can easily run using Docker.
 
 If you want to use a pre-built container ([`jhaynie/github-webhook-kafka`](https://hub.docker.com/r/jhaynie/github-webhook-kafka/)), you could use something like:
 
-`docker run -d -p 8000:8000 -e GITHUB_SECRET=hello -e KAFKA_BROKERS=192.168.1.1:9092 jhaynie/github-webhook-kafka`
+`docker run -d -p 8000:8000 -e GWK_GITHUB_SECRET=hello -e GWK_KAFKA_BROKERS=192.168.1.1:9092 jhaynie/github-webhook-kafka`
 
-Make sure you use the correct `GITHUB_SECRET` and `KAFKA_BROKERS` values.  This will run the container on port 8000 by default.
+Make sure you use the correct `GWK_GITHUB_SECRET` and `GWK_KAFKA_BROKERS` values.  This will run the container on port 8000 by default.
 
 For development, you can use the all-in-one container which contains Kafka, Zookeeper and this software:
 
-`docker run -d -p 8000:8000 -p 2181:2181 -p 9092:9092 -e GITHUB_SECRET=hello -e ADVERTISED_HOST=192.168.1.1 jhaynie/github-webhook-kafka-dev`
+`docker run -d -p 8000:8000 -p 2181:2181 -p 9092:9092 -e GWK_GITHUB_SECRET=hello -e GWK_ADVERTISED_HOST=192.168.1.1 jhaynie/github-webhook-kafka-dev`
 
-Make sure you use the correct `GITHUB_SECRET`, `ADVERTISED_HOST` values.
+Make sure you use the correct `GWK_GITHUB_SECRET`, `GWK_ADVERTISED_HOST` values.
 
 
 ## License

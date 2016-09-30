@@ -1,6 +1,6 @@
 .PHONY: all clean version
 
-VERSION := 1.0.0
+VERSION := 1.0.1
 NAME := github-webhook-kafka
 PKG := jhaynie/github-webhook-kafka
 
