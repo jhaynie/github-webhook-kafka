@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package main;
+
+message Message {
+	int32 version = 1;
+	string timestamp = 2;
+	string id = 3;
+	string event = 4;
+	bytes payload = 5;
+	string context = 6;
+}
