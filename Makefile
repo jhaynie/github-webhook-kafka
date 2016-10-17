@@ -1,6 +1,6 @@
 .PHONY: all clean version
 
-VERSION := 1.0.1
+VERSION := 1.0.2
 NAME := github-webhook-kafka
 PKG := jhaynie/github-webhook-kafka
 
@@ -22,19 +22,25 @@ clean:
 fmt:
 	@gofmt -s -l -w $(SRC)
 
+protoc:
+	@docker run --rm -v $(BASEDIR):/app -w /app znly/protoc --go_out=. -I. *.proto
+
 linux:
-	@docker run --rm -v $(GOPATH):/go -w /go/src/github.com/$(PKG) golang:latest go build -ldflags $(L) -o build/linux/$(NAME)-linux-$(VERSION) main.go
+	@docker run --rm -v $(GOPATH):/go -w /go/src/github.com/$(PKG) golang:latest go build -ldflags $(L) -o build/linux/$(NAME)-linux-$(VERSION) $(SRC)
 
 alpine:
-	@docker run --rm -v $(GOPATH):/go -w /go/src/github.com/$(PKG) jhaynie/golang-alpine go build -ldflags $(L) -o build/alpine/$(NAME)-alpine-$(VERSION) main.go
+	@docker run --rm -v $(GOPATH):/go -w /go/src/github.com/$(PKG) jhaynie/golang-alpine go build -ldflags $(L) -o build/alpine/$(NAME)-alpine-$(VERSION) $(SRC)
 
 osx:
-	@go build -ldflags $(L) -o build/osx/$(NAME)-osx-$(VERSION) main.go
+	@go build -ldflags $(L) -o build/osx/$(NAME)-osx-$(VERSION) $(SRC)
 
 build: version osx
 
 docker: alpine
 	@docker build -t $(PKG) .
 
-docker-dev: linux
+docker-dev: alpine
 	@docker build -t $(PKG)-dev -f Dockerfile-dev .
+
+dev: docker-dev
+	@docker run --rm -it -p 8000:8000 -e GWK_GITHUB_SECRET=1234 $(PKG)-dev

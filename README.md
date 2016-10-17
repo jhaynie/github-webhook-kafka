@@ -12,7 +12,7 @@ The following environment variables need to be set:
 
 Optionally, you can control debugging with:
 
-- `GWK_KAFKA_TOPIC_PREFIX` - the kafka topic prefix which is append to the Github event name.  defaults to empty string
+- `GWK_KAFKA_TOPIC_PREFIX` - the kafka topic prefix which is append to the Github event name.  defaults to `github/unprocessed/`
 - `GWK_PAYLOAD_DEBUG` - dump each incoming JSON event payload to the console when `true`
 - `GWK_KAFKA_DEBUG` - log kafka details when `true`
 

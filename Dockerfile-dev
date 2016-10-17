@@ -1,58 +1,87 @@
-FROM landoop/fast-data-dev
+FROM anapsix/alpine-java
 
 MAINTAINER Jeff Haynie <jhaynie@gmail.com>
 
-ENV GWK_VERSION 1.0.0
-ENV GWK_URL https://github.com/jhaynie/github-webhook-kafka/releases/download/"$GWK_VERSION"/github-webhook-kafka-alpine-"$GWK_VERSION"
+ENV GWK_VERSION 1.0.2
+ENV GWK_OS alpine
+ENV GWK_BIN github-webhook-kafka-"$GWK_OS"-"$GWK_VERSION"
+ENV GWK_URL https://github.com/jhaynie/github-webhook-kafka/releases/download/"$GWK_VERSION"/"$GWK_BIN"
 
+ENV KAFKA_VERSION="0.10.0.1" SCALA_VERSION="2.11"
+ENV KAFKA_HOME /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION}
 ENV VERSION=v6.7.0 NPM_VERSION=3
+
+ENV DISTRO_NAME=zookeeper-3.4.9
+ENV ZOO_CONF_DIR /conf
+ENV ZOO_DATA_DIR /data
+ENV ZOO_DATA_LOG_DIR /datalog
+ENV ZOO_HOME=/$DISTRO_NAME
+ENV ZOO_PORT 2181
+ENV ZOOCFGDIR=$ZOO_CONF_DIR
+
 ENV RM_DIRS=/usr/include
 
 RUN mkdir -p /app
 
-RUN apk add --no-cache curl make gcc g++ python linux-headers paxctl libgcc libstdc++ gnupg && \
-  gpg --keyserver ha.pool.sks-keyservers.net --recv-keys \
-    9554F04D7259F04124DE6B476D5A82AC7E37093B \
-    94AE36675C464D64BAFA68DD7434390BDBE9B9C5 \
-    0034A06D9D9B0064CE8ADF6BF1747F4AD2306D93 \
-    FD3A5288F042B6850C66B31F09FE44734EB7990E \
-    71DCFD284A79C3B38668286BC97EC7A07EDE3FC1 \
-    DD8F2338BAE7501E3DD5AC78C273792F7D83545D \
-    C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
-    B9AE9905FFD7803F25714661B63B535A4C206CA9 && \
-  curl -o node-${VERSION}.tar.gz -sSL https://nodejs.org/dist/${VERSION}/node-${VERSION}.tar.gz && \
-  curl -o SHASUMS256.txt.asc -sSL https://nodejs.org/dist/${VERSION}/SHASUMS256.txt.asc && \
-  gpg --verify SHASUMS256.txt.asc && \
-  grep node-${VERSION}.tar.gz SHASUMS256.txt.asc | sha256sum -c - && \
-  tar -zxf node-${VERSION}.tar.gz && \
-  cd node-${VERSION} && \
-  export GYP_DEFINES="linux_use_gold_flags=0" && \
-  ./configure --prefix=/usr ${CONFIG_FLAGS} && \
-  NPROC=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || 1) && \
-  make -j${NPROC} -C out mksnapshot BUILDTYPE=Release && \
-  paxctl -cm out/Release/mksnapshot && \
-  make -j${NPROC} && \
-  make install && \
-  paxctl -cm /usr/bin/node && \
-  cd / && \
-  if [ -x /usr/bin/npm ]; then \
-    npm install -g npm@${NPM_VERSION} && \
-    find /usr/lib/node_modules/npm -name test -o -name .bin -type d | xargs rm -rf; \
-  fi && \
-  npm install -g localtunnel && \
-  curl -o /app/github-webhook-kafka -sSL $GWK_URL && \
-  chmod +x /app/github-webhook-kafka && \
-  apk del curl make gcc g++ python linux-headers paxctl gnupg ${DEL_PKGS} && \
-  rm -rf /etc/ssl /node-${VERSION}.tar.gz /SHASUMS256.txt.asc /node-${VERSION} ${RM_DIRS} \
-    /usr/share/man /tmp/* /var/cache/apk/* /root/.npm /root/.node-gyp /root/.gnupg \
-    /usr/lib/node_modules/npm/man /usr/lib/node_modules/npm/doc /usr/lib/node_modules/npm/html
+RUN apk add --update --no-cache supervisor unzip wget curl jq coreutils make gcc g++ python linux-headers paxctl libgcc libstdc++ gnupg && \
+	K_mirror=$(curl --stderr /dev/null https://www.apache.org/dyn/closer.cgi\?as_json\=1 | jq -r '.preferred') && \
+	K_url="${K_mirror}kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" && \
+	wget -q "${K_url}" -O "/tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" && \
+	tar xfz /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -C /opt && \
+	rm /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz && \
+	gpg --keyserver ha.pool.sks-keyservers.net --recv-keys \
+		9554F04D7259F04124DE6B476D5A82AC7E37093B \
+		94AE36675C464D64BAFA68DD7434390BDBE9B9C5 \
+		0034A06D9D9B0064CE8ADF6BF1747F4AD2306D93 \
+		FD3A5288F042B6850C66B31F09FE44734EB7990E \
+		71DCFD284A79C3B38668286BC97EC7A07EDE3FC1 \
+		DD8F2338BAE7501E3DD5AC78C273792F7D83545D \
+		C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
+		B9AE9905FFD7803F25714661B63B535A4C206CA9 && \
+	curl -o node-${VERSION}.tar.gz -sSL https://nodejs.org/dist/${VERSION}/node-${VERSION}.tar.gz && \
+	curl -o SHASUMS256.txt.asc -sSL https://nodejs.org/dist/${VERSION}/SHASUMS256.txt.asc && \
+	gpg --verify SHASUMS256.txt.asc && \
+	grep node-${VERSION}.tar.gz SHASUMS256.txt.asc | sha256sum -c - && \
+	tar -zxf node-${VERSION}.tar.gz && \
+	cd node-${VERSION} && \
+	export GYP_DEFINES="linux_use_gold_flags=0" && \
+	./configure --prefix=/usr ${CONFIG_FLAGS} && \
+	NPROC=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || 1) && \
+	make -j${NPROC} -C out mksnapshot BUILDTYPE=Release && \
+	paxctl -cm out/Release/mksnapshot && \
+	make -j${NPROC} && \
+	make install && \
+	paxctl -cm /usr/bin/node && \
+	cd / && \
+	if [ -x /usr/bin/npm ]; then \
+		npm install -g npm@${NPM_VERSION} && \
+		find /usr/lib/node_modules/npm -name test -o -name .bin -type d | xargs rm -rf; \
+	fi && \
+	npm install -g localtunnel && \
+	mkdir -p "$ZOO_DATA_LOG_DIR" "$ZOO_DATA_DIR" "$ZOO_CONF_DIR" && \
+	curl -o /app/github-webhook-kafka -sSL $GWK_URL && \
+	chmod +x /app/github-webhook-kafka && \
+	ln -s /app/github-webhook-kafka /bin/encrypt && \
+	apk del unzip wget curl jq coreutils make gcc python linux-headers paxctl libgcc libstdc++ gnupg && \
+	rm -rf /etc/ssl /node-${VERSION}.tar.gz /SHASUMS256.txt.asc /node-${VERSION} ${RM_DIRS} \
+		/usr/share/man /tmp/* /var/cache/apk/* /root/.npm /root/.node-gyp /root/.gnupg \
+		/usr/lib/node_modules/npm/man /usr/lib/node_modules/npm/doc /usr/lib/node_modules/npm/html
 
-EXPOSE 8000
+EXPOSE 8000 2181 9092
 
 ENV GWK_PAYLOAD_DEBUG true
 ENV GWK_KAFKA_DEBUG true
+ENV AUTO_CREATE_TOPICS true
+ENV LOG_RETENTION_HOURS 1
 
-RUN printf "auto.create.topics.enable=true\n" >> /opt/confluent-3.0.1/etc/kafka/server.properties
+RUN printf "\n\n" >> /etc/supervisord.conf
+RUN printf "[program:zk]\npriority=1\ncommand=$KAFKA_HOME/bin/zookeeper-server-start.sh /conf/zoo.cfg\nautostart=true\nautorestart=true\nstdout_logfile=/dev/stdout\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/stderr\nstderr_logfile_maxbytes=0\n\n"  >> /etc/supervisord.conf
+RUN printf "[program:kafka]\npriority=2\ncommand=$KAFKA_HOME/bin/kafka-server-start.sh $KAFKA_HOME/config/server.properties\nautostart=true\nautorestart=true\nstdout_logfile=/dev/stdout\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/stderr\nstderr_logfile_maxbytes=0\n\n"  >> /etc/supervisord.conf
+RUN printf "[program:github-webhook-kafka]\npriority=3\ncommand=/app/github-webhook-kafka\nautostart=true\nautorestart=true\nstdout_logfile=/dev/stdout\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/stderr\nstderr_logfile_maxbytes=0\nstartretries=20\n\n" >> /etc/supervisord.conf
 
-RUN printf "\n\n[program:github-webhook-kafka]\ncommand=/app/github-webhook-kafka\nautostart=true\nautorestart=true\nstdout_logfile=/dev/stdout\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/stderr\nstderr_logfile_maxbytes=0\n\n" >> /etc/supervisord.conf
-RUN printf "[program:lt]\ncommand=lt -p 8000\nautostart=true\nautorestart=true\nstdout_logfile=/dev/stdout\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/stderr\nstderr_logfile_maxbytes=0\n\n" >> /etc/supervisord.conf
+COPY build/"$GWK_OS"/"$GWK_BIN" /app
+RUN mv /app/"$GWK_BIN" /app/github-webhook-kafka && \
+	chmod +x /app/github-webhook-kafka
+
+ADD start-kafka.sh /usr/bin/start-kafka.sh
+CMD ["start-kafka.sh"]
